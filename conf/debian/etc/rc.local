@@ -1,0 +1,35 @@
+#!/bin/sh
+
+modprobe ip_conntrack
+
+sysctl -p
+
+# Delete all
+iptables -F
+iptables -F -t mangle
+iptables -F -t nat
+
+iptables -X
+iptables -X -t mangle
+iptables -X -t nat
+
+iptables -Z
+iptables -Z -t mangle
+iptables -Z -t nat
+
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+
+# nat
+iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth1 -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth2 -j MASQUERADE
+
+# change hashsize on the fly
+echo 2883584 > /sys/module/nf_conntrack/parameters/hashsize
+
+# port forwards
+#/sbin/iptables -t nat -A PREROUTING -i eth1 -p tcp -m multiport --dport 22,80 -j DNAT --to 192.168.1.10 
+#/sbin/iptables -t nat -A PREROUTING -i eth1 -p udp --dport 27010:27035 -j DNAT --to 192.168.1.10
+
+exit 0

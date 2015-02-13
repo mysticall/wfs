@@ -1,0 +1,52 @@
+auto lo
+iface lo inet loopback
+
+# LAN
+auto eth0
+iface eth0 inet manual
+        pre-up /sbin/ip link set dev $IFACE up
+        post-up /sbin/ip address add 192.168.1.1/24 dev $IFACE
+
+        post-down /sbin/ip address flush dev $IFACE
+
+# WAN1
+auto eth1
+iface eth1 inet manual
+        # MAC change
+        # pre-up /sbin/ip link set $IFACE address 11:22:33:44:55:66
+        pre-up /sbin/ip link set dev $IFACE up
+        post-up /sbin/ip address add 192.168.5.5/24 dev $IFACE
+
+        # Table WAN1 - UP
+        post-up /sbin/ip route add 192.168.5.0/24 dev eth1 src 192.168.5.5 table WAN1
+        post-up /sbin/ip route add default via 192.168.5.1 dev eth1 table WAN1
+        post-up /sbin/ip route add 192.168.1.0/24 dev eth0 src 192.168.1.1 table WAN1
+        post-up /sbin/ip rule add from 192.168.5.5 lookup WAN1 prio 32500
+
+        post-up /sbin/ip route replace default scope global via 192.168.5.1 dev eth1
+
+        post-down /sbin/ip route flush default
+        post-down /sbin/ip address flush dev $IFACE
+        post-down /sbin/ip route flush cache
+
+        # Table WAN1 - DOWN
+        post-down /sbin/ip route flush table WAN1
+        post-down /sbin/ip rule del prio 32500
+
+# WAN2
+auto eth2
+iface eth2 inet manual
+        pre-up /sbin/ip link set dev $IFACE up
+        post-up /sbin/ip address add 192.168.10.10/24 dev $IFACE
+
+	# Table WAN2 - UP
+        post-up /sbin/ip route add 192.168.10.0/24 dev eth2 src 192.168.10.10 table WAN2
+        post-up /sbin/ip route add default via 192.168.10.1 dev eth2 table WAN2
+        post-up /sbin/ip route add 192.168.1.0/24 dev eth0 src 192.168.1.1 table WAN2
+        post-up /sbin/ip rule add from 192.168.10.10 lookup WAN2 prio 32600
+
+        post-down /sbin/ip address flush dev $IFACE
+
+        # Table WAN2 - DOWN
+        post-down /sbin/ip route flush table WAN2
+        post-down /sbin/ip rule del prio 32600
