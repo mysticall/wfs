@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Linux WAN failover script.
 #
@@ -48,7 +48,9 @@ NO_OF_TARGETS=ERROR
 
 test_active_connection () {
 
-    if `ip route | grep -o $PRIMARY_GW > /dev/null 2>&1`
+    IP=$(/sbin/ip route | awk '/default/ { print $3 }')
+
+    if [ "$IP" == "$PRIMARY_GW" ]
       then
         ACTIVE_CONNECTION=PRIMARY
       else
@@ -160,7 +162,7 @@ test_single_target () {
     TARGET="$1"
     # log DEBUG "Test interval between hosts is $TEST_INTERVAL"
     
-    if `ping -W $MAX_LATENCY -c $TEST_COUNT $TARGET > /dev/null 2>&1`
+    if `ping -W $MAX_LATENCY -c $TEST_COUNT $TARGET >/dev/null`
       then
         if [ "$TARGETS_FAILED" -gt "0" ] 
           then
@@ -182,7 +184,7 @@ test_single_target_primary () {
 
     TARGET="$1"
 
-    if `ping -I $PRIMARY_IFACE -W $MAX_LATENCY -c $TEST_COUNT $TARGET > /dev/null 2>&1`
+    if `ping -I $PRIMARY_IFACE -W $MAX_LATENCY -c $TEST_COUNT $TARGET >/dev/null`
       then
         switch
     fi
@@ -227,7 +229,7 @@ switch () {
 
     TARGET="$1"
 
-    if [ "$ACTIVE_CONNECTION" = "PRIMARY" ] && `ping -I $SECONDARY_IFACE -W $MAX_LATENCY -c $TEST_COUNT $TARGET > /dev/null 2>&1`
+    if [ "$ACTIVE_CONNECTION" = "PRIMARY" ] && `ping -I $SECONDARY_IFACE -W $MAX_LATENCY -c $TEST_COUNT $TARGET >/dev/null`
     then
         switch_to_secondary
         if [ ! -z "$SECONDARY_CMD" ]
